@@ -88,6 +88,12 @@ struct thread
     char name[16];                      /* Name (for debugging purposes). */
     uint8_t *stack;                     /* Saved stack pointer. */
     int priority;                       /* Priority. */
+    int ini_priority;                   /* 创建时的优先级 */
+    int nice;                           /* mlfq nice */
+    int cpu;                            /* cpu占用 */
+    struct list locks;                  /* 线程持有的锁 */
+    struct lock *wait;                  /* 等待的锁 */
+    int64_t block_time;                 /* wait time */
     struct list_elem allelem;           /* List element for all threads list. */
 
     /* Shared between thread.c and synch.c. */
@@ -118,6 +124,7 @@ tid_t thread_create (const char *name, int priority, thread_func *, void *);
 
 void thread_block (void);
 void thread_unblock (struct thread *);
+void thread_block_check (struct thread *t, void *aux UNUSED);
 
 struct thread *thread_current (void);
 tid_t thread_tid (void);
@@ -132,10 +139,18 @@ void thread_foreach (thread_action_func *, void *);
 
 int thread_get_priority (void);
 void thread_set_priority (int);
+void thread_donate_priority (struct thread *t);
+bool thread_cmp_priority (const struct list_elem *a, const struct list_elem *b, void *aux);
 
 int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
+
+/* mlfq actions */ 
+void mlfqs_increase_recent_cpu(void);
+void mlfqs_update_load_avg_and_recent_cpu(void);
+void mlfqs_update_cpu(struct thread *);
+void mlfqs_update_priority(struct thread *);
 
 #endif /* threads/thread.h */

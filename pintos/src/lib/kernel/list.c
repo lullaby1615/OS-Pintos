@@ -1,4 +1,5 @@
 #include "list.h"
+#include "threads/thread.h"
 #include "../debug.h"
 
 /* Our doubly linked lists have two header elements: the "head"
@@ -408,7 +409,6 @@ list_sort (struct list *list, list_less_func *less, void *aux)
 
   ASSERT (list != NULL);
   ASSERT (less != NULL);
-
   /* Pass over the list repeatedly, merging adjacent runs of
      nondecreasing elements, until only one run is left. */
   do
@@ -483,6 +483,17 @@ list_unique (struct list *list, struct list *duplicates,
       }
     else
       elem = next;
+}
+
+/* 
+  判断优先级大小
+  erro
+*/
+
+bool
+cmp_priority (const struct list_elem *a,const struct list_elem *b, void *aux UNUSED)
+{
+  return list_entry(a, struct thread, elem) > list_entry(b, struct thread, elem)->priority;
 }
 
 /* Returns the element in LIST with the largest value according
