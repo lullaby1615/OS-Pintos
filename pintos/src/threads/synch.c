@@ -217,15 +217,22 @@ lock_acquire (struct lock *lock)
     }
   }
   sema_down (&lock->semaphore);
-
-  if(!thread_mlfqs){
-    lock->holder = thread_current();
-    thread_current()->wait = NULL;
-    lock->max = thread_current()->priority;
-    thread_hold_the_lock(lock);
-  }
+  update_thread_attr(lock);
+  
   lock->holder = thread_current ();
   intr_set_level(old_level);
+}
+
+void 
+update_thread_attr(struct lock *lock){
+  enum intr_level old = intr_disable();
+  if(!thread_mlfqs){
+      lock->holder = thread_current();
+      thread_current()->wait = NULL;
+      lock->max = thread_current()->priority;
+      thread_hold_the_lock(lock);
+    }
+  intr_set_level(old);
 }
 
 /* Tries to acquires LOCK and returns true if successful or false

@@ -342,13 +342,13 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority) 
 {
-  if(thread_mlfqs)
-    return ;
   enum intr_level old = intr_disable();
-  thread_current()->ini_priority = new_priority;
-  if(list_empty(&thread_current()->locks) || new_priority > thread_current()->priority){
-    thread_current ()->priority = new_priority;
-    thread_yield ();
+  if(!thread_mlfqs){
+    thread_current()->ini_priority = new_priority;
+    if(new_priority > thread_current()->priority || list_empty(&thread_current()->locks)){
+      thread_current ()->priority = new_priority;
+      thread_yield ();
+    }
   }
   intr_set_level(old);
 }
@@ -363,7 +363,7 @@ thread_donate_priority (struct thread *t){
   if (t->status == THREAD_READY)
   {
     list_remove (&t->elem);
-    list_insert_ordered (&ready_list, &t->elem, thread_cmp_priority, NULL);
+    list_insert_ordered (&ready_list, &t->elem, (list_less_func *) &thread_cmp_priority, NULL);
   }
   intr_set_level (old_level);
 }
@@ -599,11 +599,11 @@ schedule (void)
   thread_schedule_tail (prev);
 }
 
-bool
-thread_cmp_priority (const struct list_elem *a, const struct list_elem *b, void *aux UNUSED)
-{
-  return list_entry(a, struct thread, elem)->priority > list_entry(b, struct thread, elem)->priority;
-}
+// bool
+// thread_cmp_priority (const struct list_elem *a, const struct list_elem *b, void *aux UNUSED)
+// {
+//   return  list_entry(b, struct thread, elem)->priority < list_entry(a, struct thread, elem)->priority;
+// }
 
 /* Returns a tid to use for a new thread. */
 static tid_t

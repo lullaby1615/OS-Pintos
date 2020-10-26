@@ -489,11 +489,10 @@ list_unique (struct list *list, struct list *duplicates,
   判断优先级大小
   erro
 */
-
 bool
-cmp_priority (const struct list_elem *a,const struct list_elem *b, void *aux UNUSED)
+thread_cmp_priority (const struct list_elem *a, const struct list_elem *b, void *aux UNUSED)
 {
-  return list_entry(a, struct thread, elem) > list_entry(b, struct thread, elem)->priority;
+  return  list_entry(b, struct thread, elem)->priority < list_entry(a, struct thread, elem)->priority;
 }
 
 /* Returns the element in LIST with the largest value according
