@@ -222,8 +222,12 @@ lock_acquire (struct lock *lock)
   sema_down (&lock->semaphore);
   update_thread(lock);
   //ASSERT(lock_remove_acquirer(lock));
+  if(thread_mlfqs){
+    lock->holder = thread_current ();
+  }
+  else{
   lock_remove_acquirer(lock);
-  //lock->holder = thread_current ();
+  }
   intr_set_level(old_level);
 }
 
