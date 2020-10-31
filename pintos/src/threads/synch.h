@@ -25,17 +25,20 @@ struct lock
     struct semaphore semaphore; /* Binary semaphore controlling access. */
     int max;                    /* 最大的优先级 */
     struct list_elem elem;      /*  */
+    struct list acquirers;//try to acquire the lock
   };
 
 void lock_init (struct lock *);
 void lock_acquire (struct lock *);
-void update_thread_attr(struct lock *);
+void update_thread(struct lock *lock);
 bool lock_try_acquire (struct lock *);
 void lock_release (struct lock *);
 bool lock_held_by_current_thread (const struct lock *);
-void thread_hold_the_lock(struct lock *lock);
+
 void thread_update_priority (struct thread *t);
-bool lock_cmp_priority(struct list_elem *a,struct list_elem *b,void *aux);
+bool lock_cmp_priority(const struct list_elem *a,const struct list_elem *b,void *aux);
+bool lock_remove_acquirer(struct lock* lock);
+int lock_get_priority(struct lock* lock);
 
 /* Condition variable. */
 struct condition 
