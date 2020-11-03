@@ -183,8 +183,8 @@ timer_interrupt (struct intr_frame *args UNUSED)
       mlfqs_update_priority(thread_current());
   }
   thread_foreach (thread_block_check, NULL);
-  intr_set_level(old);
   thread_tick ();
+  intr_set_level(old);
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer
