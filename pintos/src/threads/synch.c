@@ -210,7 +210,7 @@ lock_acquire (struct lock *lock)
     struct lock *l =lock;
     //list_insert_ordered(&l->acquirers, &thread_current()->lock_elem, thread_cmp_priority, NULL);
     thread_current()->wait = l;
-    list_insert_ordered(&l->acquirers, &thread_current()->lock_elem, (list_less_func *) thread_cmp_priority, NULL);
+    list_push_back(&l->acquirers, &thread_current()->lock_elem);
     while(l != NULL && l->holder !=NULL){
       if(l->holder->priority < thread_current()->priority){
         //l->max = thread_current()->priority;
