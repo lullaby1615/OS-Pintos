@@ -92,7 +92,6 @@ timer_sleep (int64_t ticks)
   int64_t start = timer_ticks ();
   if(ticks <= 0)
     return ;
-  ASSERT (intr_get_level () == INTR_ON);
   enum intr_level old_level = intr_disable ();
   struct thread *current_thread = thread_current ();
   current_thread->block_time = ticks;
@@ -184,8 +183,8 @@ timer_interrupt (struct intr_frame *args UNUSED)
       mlfqs_update_priority(thread_current());
   }
   thread_foreach (thread_block_check, NULL);
-  intr_set_level(old);
   thread_tick ();
+  intr_set_level(old);
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer
