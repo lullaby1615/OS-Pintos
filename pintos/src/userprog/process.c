@@ -38,8 +38,11 @@ process_execute (const char *file_name)
     return TID_ERROR;
   strlcpy (fn_copy, file_name, PGSIZE);
 
+  /* Exstract true file_name */
+  char* save_ptr;
+
   /* Create a new thread to execute FILE_NAME. */
-  tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
+  tid = thread_create (strtok_r (file_name, " ", &save_ptr), PRI_DEFAULT, start_process, fn_copy);
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy); 
   return tid;
@@ -59,13 +62,37 @@ start_process (void *file_name_)
   if_.gs = if_.fs = if_.es = if_.ds = if_.ss = SEL_UDSEG;
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
-  success = load (file_name, &if_.eip, &if_.esp);
 
-  /* If load failed, quit. */
+  /* Exstract true file_name */
+  char *save_ptr, *token;
+  token = strtok_r (file_name, " ", &save_ptr); 
+  success = load (token, &if_.eip, &if_.esp);
+  
+  char *esp=(char*)if_.esp;
+char*arg[256]; // assume numbers of argument below 256   
+  int i,n=0;
+  for(;token!=NULL;token=strtok_r(NULL," ",&save_ptr))//copy the argument to user stack     
+  {
+  esp-=strlen(token)+1; //because user stack increase to low addr. 
+  	strlcpy(esp,token,strlen(token)+2); //copy param to user stack 
+  	arg[n++]=esp;
+  }
+	while((int)esp% 4)//word align     
+	esp--;
+  int*p=esp-4;
+  *p--=0;//first 0 
+  for(i=n-1;i>=0;i--)//place the arguments' pointers to stack     
+  *p--=(int*)arg[i];
+  *p--=p+1;*p--=n;*p--=0;esp=p+1;
+  if_.esp=esp;//set new stack top   palloc_free_page (file_name);
+
   palloc_free_page (file_name);
-  if (!success) 
+  
+  /* If load failed, quit. */
+  if (!success) {
     thread_exit ();
-
+  	}
+  
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in
      threads/intr-stubs.S).  Because intr_exit takes all of its
@@ -88,7 +115,8 @@ start_process (void *file_name_)
 int
 process_wait (tid_t child_tid UNUSED) 
 {
-  return -1;
+  sema_down(&thread_current()->waiting);
+  return 0;
 }
 
 /* Free the current process's resources. */
@@ -114,6 +142,7 @@ process_exit (void)
       pagedir_activate (NULL);
       pagedir_destroy (pd);
     }
+  sema_up(&thread_current()->parent->waiting);
 }
 
 /* Sets up the CPU for running user code in the current
@@ -427,7 +456,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 /* Create a minimal stack by mapping a zeroed page at the top of
    user virtual memory. */
 static bool
-setup_stack (void **esp) 
+ setup_stack (void **esp) 
 {
   uint8_t *kpage;
   bool success = false;
