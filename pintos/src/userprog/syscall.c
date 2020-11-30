@@ -405,9 +405,9 @@ bool is_valid_pointer(void* esp,uint8_t argc){
   uint8_t i = 0;
 for (; i < argc; ++i)
 {
-  // if (get_user(((uint8_t *)esp)+i) == -1){
-  //   return false;
-  // }
+   if (get_user(((uint8_t *)esp)+i) == -1){
+     return false;
+   }
   if((!is_user_vaddr(esp))||(pagedir_get_page(thread_current()->pagedir,esp)==NULL)){
     return false;
   }

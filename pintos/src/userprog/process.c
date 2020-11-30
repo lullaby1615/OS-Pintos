@@ -58,33 +58,40 @@ start_process (void *file_name_)
   bool success;
 
   /* Initialize interrupt frame and load executable. */
-  memset (&if_, 0, sizeof if_);
+  memset(&if_, 0, sizeof if_);
   if_.gs = if_.fs = if_.es = if_.ds = if_.ss = SEL_UDSEG;
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
 
   /* Exstract true file_name */
   char *save_ptr, *token;
-  token = strtok_r (file_name, " ", &save_ptr); 
-  success = load (token, &if_.eip, &if_.esp);
-  
-  char *esp=(char*)if_.esp;
-char*arg[256]; // assume numbers of argument below 256   
-  int i,n=0;
-  for(;token!=NULL;token=strtok_r(NULL," ",&save_ptr))//copy the argument to user stack     
+  token = strtok_r(file_name, " ", &save_ptr);
+  success = load(token, &if_.eip, &if_.esp);
+
+  /* Store arguments */
+  char *esp = (char *)if_.esp;
+  /* Maximum number of arguments */
+  char *arg[100];
+  /* Extract arguments */
+  int n = 0;
+  for (; token != NULL; token = strtok_r(NULL, " ", &save_ptr))
   {
-  esp-=strlen(token)+1; //because user stack increase to low addr. 
-  	strlcpy(esp,token,strlen(token)+2); //copy param to user stack 
-  	arg[n++]=esp;
+    esp -= strlen(token) + 1;
+    memcpy(esp, token, strlen(token) + 1);
+    arg[n++] = esp;
   }
-	while((int)esp% 4)//word align     
-	esp--;
-  int*p=esp-4;
-  *p--=0;//first 0 
-  for(i=n-1;i>=0;i--)//place the arguments' pointers to stack     
-  *p--=(int*)arg[i];
-  *p--=p+1;*p--=n;*p--=0;esp=p+1;
-  if_.esp=esp;//set new stack top   palloc_free_page (file_name);
+  /* Align */
+  esp -= 4 - (int)esp % 4;
+  /* Store addr of arguments */
+  int *sp = esp;
+  *(--sp) = 0; // last arg
+  for (int i = n - 1; i >= 0; i--)
+    *(--sp) = arg[i];
+  sp--;
+  *sp = sp+1; //argv
+  *(--sp) = n; //argc
+  *(--sp) = 0; //return addr
+  if_.esp = sp;
 
   palloc_free_page (file_name);
   
