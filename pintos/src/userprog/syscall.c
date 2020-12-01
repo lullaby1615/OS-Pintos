@@ -24,9 +24,7 @@
 #include <syscall-nr.h>
 #include "threads/interrupt.h"
 #include "threads/thread.h"
-<<<<<<< HEAD
-#include "devices/shutdown.h"
-=======
+
 #include "threads/vaddr.h"
 #include "userprog/process.h"
 #include "filesys/file.h"
@@ -144,7 +142,6 @@ find_file_by_fd (int fd)
   return ret->file;
 }
 
->>>>>>> ef5785d0581778b711ed1ff25f7901ac2b8c5db3
 
 /**
 Creates a new file called file initially initial size bytes in size.
@@ -253,14 +250,16 @@ void exit(int status){
 struct thread *t;
 struct list_elem *l;
 t = thread_current ();
-// while (!list_empty (&t->fd_list))
-//   {
-//     l = list_begin (&t->fd_list);
-// printf("1111111111111\n");
-//     close (list_entry (l, struct fd_entry, thread_elem)->fd);
-//   }
+while (!list_empty (&t->fd_list))
+  {
+    l = list_begin (&t->fd_list);
+    close (list_entry (l, struct fd_entry, thread_elem)->fd);
+  }
 
 t->exit_status = status;
+if(t->parent != NULL){
+
+}
 thread_exit ();
 }
 
@@ -339,13 +338,11 @@ unsigned tell (int fd){
   return file_tell(f);
 }
 
-<<<<<<< HEAD
-void 
-syscall_init (void) 
-=======
+
+
 void
 syscall_init (void)
->>>>>>> ef5785d0581778b711ed1ff25f7901ac2b8c5db3
+
 {
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
   syscall_handlers[SYS_HALT] = &sys_halt;
@@ -621,8 +618,8 @@ find_fd_entry_by_fd (int fd)
   return NULL;
 }
 
-void halt(void){
-  shutdown_power_off();
-};
+// void halt(void){
+//   shutdown_power_off();
+// };
 
 

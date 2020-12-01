@@ -148,8 +148,9 @@ process_exit (void)
       cur->pagedir = NULL;
       pagedir_activate (NULL);
       pagedir_destroy (pd);
+      printf ("%s: exit(%d)\n", thread_current()->name, thread_current()->exit_status);//modify
     }
-  printf ("%s: exit(%d)\n", thread_current()->name, thread_current()->status);
+  
   sema_up(&thread_current()->parent->waiting);
 }
 
@@ -474,7 +475,7 @@ static bool
     {
       success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
       if (success)
-        *esp = PHYS_BASE-12;
+        *esp = PHYS_BASE;
       else
         palloc_free_page (kpage);
     }
