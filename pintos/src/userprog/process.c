@@ -38,8 +38,11 @@ process_execute (const char *file_name)
     return TID_ERROR;
   strlcpy (fn_copy, file_name, PGSIZE);
 
+  /* Exstract true file_name */
+  char* save_ptr;
+
   /* Create a new thread to execute FILE_NAME. */
-  tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
+  tid = thread_create (strtok_r (file_name, " ", &save_ptr), PRI_DEFAULT, start_process, fn_copy);
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy); 
   return tid;
@@ -55,17 +58,48 @@ start_process (void *file_name_)
   bool success;
 
   /* Initialize interrupt frame and load executable. */
-  memset (&if_, 0, sizeof if_);
+  memset(&if_, 0, sizeof if_);
   if_.gs = if_.fs = if_.es = if_.ds = if_.ss = SEL_UDSEG;
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
-  success = load (file_name, &if_.eip, &if_.esp);
 
-  /* If load failed, quit. */
+  /* Exstract true file_name */
+  char *save_ptr, *token;
+  token = strtok_r(file_name, " ", &save_ptr);
+  success = load(token, &if_.eip, &if_.esp);
+
+  /* Store arguments */
+  char *esp = (char *)if_.esp;
+  /* Maximum number of arguments */
+  char *arg[100];
+  /* Extract arguments */
+  int n = 0;
+  for (; token != NULL; token = strtok_r(NULL, " ", &save_ptr))
+  {
+    esp -= strlen(token) + 1;
+    memcpy(esp, token, strlen(token) + 1);
+    arg[n++] = esp;
+  }
+  /* Align */
+  esp -= 4 - (int)esp % 4;
+  /* Store addr of arguments */
+  int *sp = esp;
+  *(--sp) = 0; // last arg
+  for (int i = n - 1; i >= 0; i--)
+    *(--sp) = arg[i];
+  sp--;
+  *sp = sp+1; //argv
+  *(--sp) = n; //argc
+  *(--sp) = 0; //return addr
+  if_.esp = sp;
+
   palloc_free_page (file_name);
-  if (!success) 
+  
+  /* If load failed, quit. */
+  if (!success) {
     thread_exit ();
-
+  	}
+  
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in
      threads/intr-stubs.S).  Because intr_exit takes all of its
@@ -88,7 +122,8 @@ start_process (void *file_name_)
 int
 process_wait (tid_t child_tid UNUSED) 
 {
-  return -1;
+  sema_down(&thread_current()->waiting);
+  return 0;
 }
 
 /* Free the current process's resources. */
@@ -113,7 +148,10 @@ process_exit (void)
       cur->pagedir = NULL;
       pagedir_activate (NULL);
       pagedir_destroy (pd);
+      printf ("%s: exit(%d)\n", thread_current()->name, thread_current()->exit_status);//modify
     }
+  
+  sema_up(&thread_current()->parent->waiting);
 }
 
 /* Sets up the CPU for running user code in the current
@@ -427,7 +465,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 /* Create a minimal stack by mapping a zeroed page at the top of
    user virtual memory. */
 static bool
-setup_stack (void **esp) 
+ setup_stack (void **esp) 
 {
   uint8_t *kpage;
   bool success = false;
