@@ -40,9 +40,16 @@ process_execute (const char *file_name)
 
   /* Exstract true file_name */
   char* save_ptr;
+  char *file_name_true = strtok_r (file_name, " ", &save_ptr);
+  struct dir *dir = dir_open_root ();
+  struct inode *inode = NULL;
+  if(!dir_lookup (dir, file_name_true, &inode)){
+    palloc_free_page (fn_copy); 
+    return -1;
+  }
 
   /* Create a new thread to execute FILE_NAME. */
-  tid = thread_create (strtok_r (file_name, " ", &save_ptr), PRI_DEFAULT, start_process, fn_copy);
+  tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy); 
   return tid;
@@ -475,7 +482,7 @@ static bool
     {
       success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
       if (success)
-        *esp = PHYS_BASE;
+        *esp = PHYS_BASE-12;
       else
         palloc_free_page (kpage);
     }

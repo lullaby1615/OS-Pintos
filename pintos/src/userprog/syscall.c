@@ -31,6 +31,7 @@
 #include "filesys/filesys.h"
 #include "threads/malloc.h"
 #include "threads/synch.h"
+#include "filesys/directory.h"
 
 #define STDIN 0
 #define STDOUT 1
@@ -247,9 +248,8 @@ exit curret thread with given status
 void exit(int status){
 
   /* Close all the files */
-struct thread *t;
+struct thread *t = thread_current ();
 struct list_elem *l;
-t = thread_current ();
 while (!list_empty (&t->fd_list))
   {
     l = list_begin (&t->fd_list);
@@ -468,6 +468,10 @@ void sys_wait(struct intr_frame* f){
     exit(-1);
   }
   pid = *((int*)f->esp+1);
+  if(pid == -1){
+    f->eax = -1;
+    return;
+  }
   f->eax = wait(pid);
 };
 
@@ -617,9 +621,3 @@ find_fd_entry_by_fd (int fd)
 
   return NULL;
 }
-
-// void halt(void){
-//   shutdown_power_off();
-// };
-
-
