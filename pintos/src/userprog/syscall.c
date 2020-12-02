@@ -255,11 +255,14 @@ while (!list_empty (&t->fd_list))
     l = list_begin (&t->fd_list);
     close (list_entry (l, struct fd_entry, thread_elem)->fd);
   }
+  // while (!list_empty (&t->children))
+  // {
+  //   l = list_begin (&t->children);
+  //   close (list_entry (l, struct fd_entry, thread_elem)->fd);
+  // }
 
 t->exit_status = status;
-if(t->parent != NULL){
-
-}
+t->is_exit = 1;
 thread_exit ();
 }
 

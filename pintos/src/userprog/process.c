@@ -117,6 +117,18 @@ start_process (void *file_name_)
   NOT_REACHED ();
 }
 
+struct thread* get_child_thread(tid_t tid){
+  struct thread * cur = thread_current();
+  struct list_elem *e;
+  for(e = list_begin(&cur->children);e != list_end(&cur->children);e=list_next(e)){
+    struct thread* child = list_entry(e,struct thread,elem);
+    if(tid == child->tid){
+      return child;
+    }
+  }
+  return NULL;
+}
+
 /* Waits for thread TID to die and returns its exit status.  If
    it was terminated by the kernel (i.e. killed due to an
    exception), returns -1.  If TID is invalid or if it was not a
@@ -127,10 +139,26 @@ start_process (void *file_name_)
    This function will be implemented in problem 2-2.  For now, it
    does nothing. */
 int
-process_wait (tid_t child_tid UNUSED) 
+process_wait (tid_t child_tid) 
 {
+  struct thread *child_t = get_child_thread(child_tid);
+  if(child_t == NULL){
+    return -1;
+  }
+  else
+  {
+    child_t->wait_time++;
+    if(child_t->status == THREAD_DYING|| child_t->is_exit == 1||child_t->wait_time > 1)
+      return -1;
+  }
+
+  
+  // list_remove(&child_t->elem);
+
   sema_down(&thread_current()->waiting);
-  return 0;
+  int child_status = child_t->exit_status;
+  // printf("%d %d\n",child_t->tid,child_t->exit_status);
+  return child_status;
 }
 
 /* Free the current process's resources. */
@@ -152,13 +180,13 @@ process_exit (void)
          directory before destroying the process's page
          directory, or our active page directory will be one
          that's been freed (and cleared). */
+      printf ("%s: exit(%d)\n", thread_current()->name, thread_current()->exit_status);//modify
+      sema_up(&thread_current()->parent->waiting);
       cur->pagedir = NULL;
       pagedir_activate (NULL);
       pagedir_destroy (pd);
-      printf ("%s: exit(%d)\n", thread_current()->name, thread_current()->exit_status);//modify
+      
     }
-  
-  sema_up(&thread_current()->parent->waiting);
 }
 
 /* Sets up the CPU for running user code in the current
