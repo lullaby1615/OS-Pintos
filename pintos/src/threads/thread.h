@@ -94,22 +94,29 @@ struct thread
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
 
-#ifdef USERPROG
+//#ifdef USERPROG
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */
 
     struct list children;               /* child processes */
     struct list fd_list;       /* List of all file_descriptor it owns*/
-    int exit_status;
+    int exit_status;            /*exit status*/
     struct file *executable;     /* The thread's executable*/
 
 	struct thread* parent;				/* parent process */
 	struct semaphore waiting;			/* Process_wait. */
 
-#endif
+//#endif
 
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
+  };
+
+  struct child_thread{
+     tid_t tid;
+     int exit_status;
+     int has_waited;
+   struct list_elem elem;
   };
 
 /* If false (default), use round-robin scheduler.
@@ -148,4 +155,5 @@ void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
 
+int is_thread_by_tid(tid_t);
 #endif /* threads/thread.h */
