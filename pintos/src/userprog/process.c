@@ -38,11 +38,18 @@ process_execute (const char *file_name)
     return TID_ERROR;
   strlcpy (fn_copy, file_name, PGSIZE);
 
-  /* Exstract true file_name */
+  /* get true file_name */
   char* save_ptr;
+  char *file_name_true = strtok_r (file_name, " ", &save_ptr);
+  struct dir *dir = dir_open_root ();
+  struct inode *inode = NULL;
+  if(!dir_lookup (dir, file_name_true, &inode)){
+    palloc_free_page (fn_copy); 
+    return -1;
+  }
 
   /* Create a new thread to execute FILE_NAME. */
-  tid = thread_create (strtok_r (file_name, " ", &save_ptr), PRI_DEFAULT, start_process, fn_copy);
+  tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy); 
   return tid;
@@ -110,20 +117,38 @@ start_process (void *file_name_)
   NOT_REACHED ();
 }
 
-/* Waits for thread TID to die and returns its exit status.  If
-   it was terminated by the kernel (i.e. killed due to an
-   exception), returns -1.  If TID is invalid or if it was not a
-   child of the calling process, or if process_wait() has already
-   been successfully called for the given TID, returns -1
-   immediately, without waiting.
 
-   This function will be implemented in problem 2-2.  For now, it
-   does nothing. */
+/*get exit_status by child's tid*/
+int get_exit_status(tid_t tid){
+  int exit_status = -1;
+  struct thread * cur = thread_current();
+  struct list_elem *e;
+  for(e = list_begin(&cur->children);e != list_end(&cur->children);e=list_next(e)){
+    struct child_thread* child = list_entry(e,struct child_thread,elem);
+    if(tid == child->tid){
+      exit_status = child->exit_status;
+      child->exit_status = -1;
+      break;
+    }
+  }
+  return exit_status;
+}
+
 int
-process_wait (tid_t child_tid UNUSED) 
+process_wait (tid_t child_tid) 
 {
+    
+  int t = is_thread_by_tid(child_tid);
+  int ret = -1;
+
+  if(t == 0){//thread doesn't exist
+    ret = get_exit_status(child_tid);
+    return ret;
+  }
   sema_down(&thread_current()->waiting);
-  return 0;
+  ret = get_exit_status(child_tid);
+
+  return ret;
 }
 
 /* Free the current process's resources. */
@@ -145,13 +170,21 @@ process_exit (void)
          directory before destroying the process's page
          directory, or our active page directory will be one
          that's been freed (and cleared). */
+
+         /*store exit_status before exit*/
+      struct child_thread * c = (struct child_thread *)malloc(sizeof(struct child_thread));
+      c->exit_status = cur->exit_status;
+      c->tid = cur->tid;
+      list_push_back(&cur->parent->children,&c->elem);
+
+      /*print exit info*/
+      printf ("%s: exit(%d)\n", thread_current()->name, thread_current()->exit_status);
+      sema_up(&thread_current()->parent->waiting);
       cur->pagedir = NULL;
       pagedir_activate (NULL);
       pagedir_destroy (pd);
-      printf ("%s: exit(%d)\n", thread_current()->name, thread_current()->exit_status);//modify
+      
     }
-  
-  sema_up(&thread_current()->parent->waiting);
 }
 
 /* Sets up the CPU for running user code in the current
@@ -475,7 +508,7 @@ static bool
     {
       success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
       if (success)
-        *esp = PHYS_BASE;
+        *esp = PHYS_BASE-12;
       else
         palloc_free_page (kpage);
     }

@@ -31,6 +31,7 @@
 #include "filesys/filesys.h"
 #include "threads/malloc.h"
 #include "threads/synch.h"
+#include "filesys/directory.h"
 
 #define STDIN 0
 #define STDOUT 1
@@ -240,6 +241,17 @@ int write (int fd, const void *buffer, unsigned length){
   }
 }
 
+// struct child_thread* get_child_thread(tid_t tid){
+//   struct thread * cur = thread_current();
+//   struct list_elem *e;
+//   for(e = list_begin(&cur->children);e != list_end(&cur->children);e=list_next(e)){
+//     struct child_thread* child = list_entry(e,struct child_thread,elem);
+//     if(tid == child->tid){
+//       return child;
+//     }
+//   }
+//   return NULL;
+// }
 
 /*
 exit curret thread with given status
@@ -247,19 +259,15 @@ exit curret thread with given status
 void exit(int status){
 
   /* Close all the files */
-struct thread *t;
+struct thread *t = thread_current ();
 struct list_elem *l;
-t = thread_current ();
+/*close file*/
 while (!list_empty (&t->fd_list))
   {
     l = list_begin (&t->fd_list);
     close (list_entry (l, struct fd_entry, thread_elem)->fd);
   }
-
 t->exit_status = status;
-if(t->parent != NULL){
-
-}
 thread_exit ();
 }
 
@@ -456,8 +464,13 @@ void sys_exec(struct intr_frame* f){
     exit(-1);
   }
   char *file_name = *(char **)(f->esp+4);
+  /*copy file name to handle '/0'*/
+  char *newfile_name = (char*)malloc(sizeof(char)*(strlen(file_name)+1));
+  memcpy(newfile_name,file_name,strlen(file_name)+1);
   lock_acquire(&file_lock);
-  f->eax = exec(file_name);
+
+  f->eax = exec(newfile_name);
+  free(newfile_name);
   lock_release(&file_lock);
 };
 
@@ -468,6 +481,10 @@ void sys_wait(struct intr_frame* f){
     exit(-1);
   }
   pid = *((int*)f->esp+1);
+  if(pid == -1){
+    f->eax = -1;
+    return;
+  }
   f->eax = wait(pid);
 };
 
@@ -617,9 +634,3 @@ find_fd_entry_by_fd (int fd)
 
   return NULL;
 }
-
-// void halt(void){
-//   shutdown_power_off();
-// };
-
-
