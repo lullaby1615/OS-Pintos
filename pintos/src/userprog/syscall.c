@@ -92,7 +92,6 @@ struct fd_entry{
   struct list_elem thread_elem;
 };
 
-static struct lock file_lock;
 static struct list file_list;
 
 /*
@@ -548,7 +547,7 @@ void sys_read(struct intr_frame* f){
   }
   lock_acquire(&file_lock);
   f->eax = read(fd,buffer,size);
-  lock_release(&file_lock);
+  lock_release(&file_lock); 
 
 };
 
@@ -563,7 +562,7 @@ void sys_write(struct intr_frame* f){
   if (!is_valid_pointer(buffer, 1) || !is_valid_pointer(buffer + size,1)){
     exit(-1);
 }
-  lock_acquire(&file_lock);
+  lock_acquire(&file_lock); 
   f->eax = write(fd,buffer,size);
   lock_release(&file_lock);
   return;
@@ -631,6 +630,6 @@ find_fd_entry_by_fd (int fd)
       if (ret->fd == fd)
         return ret;
     }
-
+  
   return NULL;
 }

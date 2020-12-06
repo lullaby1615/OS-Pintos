@@ -73,6 +73,9 @@ start_process (void *file_name_)
   /* Exstract true file_name */
   char *save_ptr, *token;
   token = strtok_r(file_name, " ", &save_ptr);
+  
+  struct thread *t = thread_current();
+  struct file *fl = t->executable = filesys_open(token);
   success = load(token, &if_.eip, &if_.esp);
 
   /* Store arguments */
@@ -106,6 +109,7 @@ start_process (void *file_name_)
   if (!success) {
     thread_exit ();
   	}
+  file_deny_write(fl);
   
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in
