@@ -79,6 +79,7 @@ start_process (void *file_name_)
   token = strtok_r(file_name, " ", &save_ptr);
   success = load(token, &if_.eip, &if_.esp);
   struct thread *cur = thread_current();
+  struct file *fl = cur->executable = filesys_open(token);
   /* If load failed, quit. */
   if (!success) { 
     cur->tid = -1;
@@ -88,6 +89,8 @@ start_process (void *file_name_)
     // thread_exit ();
   	}
   sema_up(&cur->parent->load_waiting);
+  
+  file_deny_write(fl);
   /* Store arguments */
   char *esp = (char *)if_.esp;
   /* Maximum number of arguments */
@@ -187,6 +190,9 @@ process_exit (void)
       c->tid = cur->tid;
       list_push_back(&cur->parent->children,&c->elem);
 
+      struct file *fl = thread_current()->executable;
+      file_allow_write(fl);
+      thread_current()->executable = NULL;
       /*print exit info*/
       printf ("%s: exit(%d)\n", thread_current()->name, thread_current()->exit_status);
       sema_up(&thread_current()->parent->waiting);

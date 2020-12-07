@@ -92,7 +92,6 @@ struct fd_entry{
   struct list_elem thread_elem;
 };
 
-static struct lock file_lock;
 static struct list file_list;
 
 /*
@@ -553,7 +552,7 @@ void sys_read(struct intr_frame* f){
   void *buffer = *(char**)(f->esp + 8);
   unsigned size = *(unsigned *)(f->esp + 12);
   if (!is_valid_pointer(buffer, 1) || !is_valid_pointer(buffer + size,1)){
-    exit(-1);
+    exit(-1); 
   }
   lock_acquire(&file_lock);
   f->eax = read(fd,buffer,size);
@@ -566,8 +565,11 @@ void sys_write(struct intr_frame* f){
   if(!is_valid_pointer(f->esp+4,12)){
     exit(-1);
   }
+  //文件描述符
   int fd = *(int *)(f->esp +4);
+  //缓冲
   void *buffer = *(char**)(f->esp + 8);
+  //字节大小
   unsigned size = *(unsigned *)(f->esp + 12);
   if (!is_valid_pointer(buffer, 1) || !is_valid_pointer(buffer + size,1)){
     exit(-1);
