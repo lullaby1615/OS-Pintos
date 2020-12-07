@@ -267,6 +267,14 @@ while (!list_empty (&t->fd_list))
     l = list_begin (&t->fd_list);
     close (list_entry (l, struct fd_entry, thread_elem)->fd);
   }
+/*free children*/
+while (!list_empty (&t->children))
+     {
+       l = list_pop_front (&t->children);
+       struct child_thread *c = list_entry(l,struct child_thread,elem);
+       free(c);
+     }
+
 t->exit_status = status;
 thread_exit ();
 }
@@ -469,9 +477,14 @@ void sys_exec(struct intr_frame* f){
   memcpy(newfile_name,file_name,strlen(file_name)+1);
   lock_acquire(&file_lock);
 
-  f->eax = exec(newfile_name);
+   f->eax  = exec(newfile_name);
+  //  struct thread* t_exec = find_thread_by_tid(tid);
+  //sema_down(&thread_current()->load_waiting);
+   
   free(newfile_name);
+sema_up(&thread_current()->load_waiting);
   lock_release(&file_lock);
+  
 };
 
 /* Wait for a child process to die. */

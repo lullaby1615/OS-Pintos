@@ -165,7 +165,7 @@ main (int argc, char *argv[])
     }
 
   consume_some_resources ();
-
+  
   if (n == 0)
     {
       if (expected_depth < EXPECTED_DEPTH_TO_PASS)

@@ -469,6 +469,7 @@ init_thread (struct thread *t, const char *name, int priority)
   t->magic = THREAD_MAGIC;
 
   sema_init(&t->waiting, 0);
+  sema_init(&t->load_waiting, 0);
 
   #ifdef USERPROG//modify
   
@@ -597,14 +598,14 @@ uint32_t thread_stack_ofs = offsetof (struct thread, stack);
 
 /*return 1 if the thread with TID 1 exists,
   if doesn't exist return 0 */
-int is_thread_by_tid(tid_t tid){
+struct thread* find_thread_by_tid(tid_t tid){
   struct thread * cur = thread_current();
   struct list_elem *e;
   for(e = list_begin(&all_list);e != list_end(&all_list);e=list_next(e)){
     struct thread* t = list_entry(e,struct thread,allelem);
     if(tid == t->tid){
-      return 1;
+      return t;
     }
   }
-  return 0;
+  return NULL;
 }

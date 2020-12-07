@@ -105,7 +105,7 @@ struct thread
 
 	struct thread* parent;				/* parent process */
 	struct semaphore waiting;			/* Process_wait. */
-
+struct semaphore load_waiting;
 //#endif
 
     /* Owned by thread.c. */
@@ -155,5 +155,5 @@ void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
 
-int is_thread_by_tid(tid_t);
+struct thread* find_thread_by_tid(tid_t);
 #endif /* threads/thread.h */

@@ -25,7 +25,7 @@ static bool load (const char *cmdline, void (**eip) (void), void **esp);
    FILENAME.  The new thread may be scheduled (and may even exit)
    before process_execute() returns.  Returns the new process's
    thread id, or TID_ERROR if the thread cannot be created. */
-tid_t
+tid_t  
 process_execute (const char *file_name) 
 {
   char *fn_copy;
@@ -50,6 +50,10 @@ process_execute (const char *file_name)
 
   /* Create a new thread to execute FILE_NAME. */
   tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
+  struct thread *t = find_thread_by_tid(tid);
+  /*wait child load*/
+  sema_down(&thread_current()->load_waiting); 
+  tid = t -> tid;
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy); 
   return tid;
@@ -74,7 +78,16 @@ start_process (void *file_name_)
   char *save_ptr, *token;
   token = strtok_r(file_name, " ", &save_ptr);
   success = load(token, &if_.eip, &if_.esp);
-
+  struct thread *cur = thread_current();
+  /* If load failed, quit. */
+  if (!success) {
+    cur->tid = -1;
+    palloc_free_page (file_name);
+    sema_up(&cur->parent->load_waiting);
+    exit(-1);
+    // thread_exit ();
+  	}
+  sema_up(&cur->parent->load_waiting);
   /* Store arguments */
   char *esp = (char *)if_.esp;
   /* Maximum number of arguments */
@@ -102,10 +115,7 @@ start_process (void *file_name_)
 
   palloc_free_page (file_name);
   
-  /* If load failed, quit. */
-  if (!success) {
-    thread_exit ();
-  	}
+
   
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in
@@ -138,10 +148,10 @@ int
 process_wait (tid_t child_tid) 
 {
     
-  int t = is_thread_by_tid(child_tid);
+  struct thread* t = find_thread_by_tid(child_tid);
   int ret = -1;
 
-  if(t == 0){//thread doesn't exist
+  if(t == NULL){//thread doesn't exist
     ret = get_exit_status(child_tid);
     return ret;
   }
