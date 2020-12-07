@@ -478,11 +478,7 @@ void sys_exec(struct intr_frame* f){
   lock_acquire(&file_lock);
 
    f->eax  = exec(newfile_name);
-  //  struct thread* t_exec = find_thread_by_tid(tid);
-  //sema_down(&thread_current()->load_waiting);
-   
   free(newfile_name);
-sema_up(&thread_current()->load_waiting);
   lock_release(&file_lock);
   
 };

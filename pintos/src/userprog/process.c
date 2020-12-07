@@ -80,9 +80,9 @@ start_process (void *file_name_)
   success = load(token, &if_.eip, &if_.esp);
   struct thread *cur = thread_current();
   /* If load failed, quit. */
-  if (!success) {
+  if (!success) { 
     cur->tid = -1;
-    palloc_free_page (file_name);
+    // palloc_free_page (file_name);
     sema_up(&cur->parent->load_waiting);
     exit(-1);
     // thread_exit ();
