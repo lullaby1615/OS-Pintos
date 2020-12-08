@@ -55,7 +55,7 @@ process_execute (const char *file_name)
   sema_down(&thread_current()->load_waiting); 
   tid = t -> tid;
   if (tid == TID_ERROR)
-    palloc_free_page (fn_copy); 
+    palloc_free_page (fn_copy);
   return tid;
 }
 
@@ -133,7 +133,7 @@ start_process (void *file_name_)
 
 /*get exit_status by child's tid*/
 int get_exit_status(tid_t tid){
-  int exit_status = -1;
+  int exit_status = -100;
   struct thread * cur = thread_current();
   struct list_elem *e;
   for(e = list_begin(&cur->children);e != list_end(&cur->children);e=list_next(e)){
@@ -158,7 +158,7 @@ process_wait (tid_t child_tid)
     ret = get_exit_status(child_tid);
     return ret;
   }
-  sema_down(&thread_current()->waiting);
+  sema_down(&t->waiting);
   ret = get_exit_status(child_tid);
 
   return ret;
@@ -195,7 +195,7 @@ process_exit (void)
       thread_current()->executable = NULL;
       /*print exit info*/
       printf ("%s: exit(%d)\n", thread_current()->name, thread_current()->exit_status);
-      sema_up(&thread_current()->parent->waiting);
+      sema_up(&thread_current()->waiting);
       cur->pagedir = NULL;
       pagedir_activate (NULL);
       pagedir_destroy (pd);

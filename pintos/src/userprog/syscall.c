@@ -275,6 +275,7 @@ while (!list_empty (&t->children))
      }
 
 t->exit_status = status;
+//while(true){}
 thread_exit ();
 }
 
@@ -461,6 +462,8 @@ void sys_exit(struct intr_frame* f){
     exit(-1);
   }
   int status = *(int *)(f->esp +4);
+//  printf("%d\n", status);
+
   exit(status);
 };
 
