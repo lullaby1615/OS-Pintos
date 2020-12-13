@@ -115,7 +115,6 @@ struct semaphore load_waiting;
   struct child_thread{
      tid_t tid;
      int exit_status;
-     int has_waited;
    struct list_elem elem;
   };
 

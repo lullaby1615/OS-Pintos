@@ -1,24 +1,3 @@
-// #include "userprog/syscall.h"
-// #include <stdio.h>
-// #include <syscall-nr.h>
-// #include "threads/interrupt.h"
-// #include "threads/thread.h"
-
-// static void syscall_handler (struct intr_frame *);
-
-// void
-// syscall_init (void) 
-// {
-//   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
-// }
-
-// static void
-// syscall_handler (struct intr_frame *f UNUSED) 
-// {
-//   printf ("system call!\n");
-//   thread_exit ();
-// }
-
 #include "userprog/syscall.h"
 #include <stdio.h>
 #include <syscall-nr.h>
@@ -40,13 +19,11 @@
 #define SYS_CALL_NUM 20
 static void syscall_handler (struct intr_frame *f);
 
-/* Process identifier. */
-typedef int pid_t;
 
 void halt (void) NO_RETURN;
 void exit (int status) NO_RETURN;
-pid_t exec (const char *file);
-int wait (pid_t);
+tid_t exec (const char *file);
+int wait (tid_t);
 bool create (const char *file, unsigned initial_size);
 bool remove (const char *file);
 int open (const char *file);
@@ -146,8 +123,8 @@ int open (const char *file){
 
 }
 
-int wait (pid_t pid){
-  return process_wait(pid);
+int wait (tid_t tid){
+  return process_wait(tid);
 }
 
 int write (int fd, const void *buffer, unsigned length){
@@ -168,23 +145,22 @@ void exit(int status){
 
   /* Close all the files */
 struct thread *t = thread_current ();
-struct list_elem *l;
+struct list_elem *e;
 /*close file_node*/
 while (!list_empty (&t->fd_list))
   {
-    l = list_begin (&t->fd_list);
-    close (list_entry (l, struct fd_entry, thread_elem)->fd);
+    e = list_begin (&t->fd_list);
+    close (list_entry (e, struct fd_entry, thread_elem)->fd);
   }
 /*free children*/
 while (!list_empty (&t->children))
      {
-       l = list_pop_front (&t->children);
-       struct child_thread *c = list_entry(l,struct child_thread,elem);
+       e = list_pop_front (&t->children);
+       struct child_thread *c = list_entry(e,struct child_thread,elem);
        free(c);
      }
 
 t->exit_status = status;
-//while(true){}
 thread_exit ();
 }
 
@@ -217,7 +193,7 @@ int read (int fd, void *buffer, unsigned length){
   }
 }
 
-pid_t exec (const char *file){
+tid_t exec (const char *file){
   return process_execute(file);
 }
 
@@ -349,12 +325,12 @@ syscall_handler (struct intr_frame *f)
       if(!is_valid_pointer(f->esp+4,4)){
         exit(-1);
       }
-      pid_t pid = *((int*)f->esp+1);
-      if(pid == -1){
+      tid_t tid = *((int*)f->esp+1);
+      if(tid == -1){
         f->eax = -1;
         return;
       }
-      f->eax = wait(pid);
+      f->eax = wait(tid);
       break;
 
     case SYS_CREATE:
@@ -435,11 +411,10 @@ syscall_handler (struct intr_frame *f)
         exit(-1);
       }
       file_name = *(char **)(f->esp+4);
-      /*copy file_node name to handle '/0'*/
+      /*copy file name to handle '/0'*/
       char *newfile_name = (char*)malloc(sizeof(char)*(strlen(file_name)+1));
       memcpy(newfile_name,file_name,strlen(file_name)+1);
       lock_acquire(&file_lock);
-
       f->eax  = exec(newfile_name);
       free(newfile_name);
       lock_release(&file_lock);
