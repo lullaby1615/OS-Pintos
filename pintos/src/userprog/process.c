@@ -174,6 +174,7 @@ process_exit (void)
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */
   pd = cur->pagedir;
+  printf ("%s: exit(%d)\n", thread_current()->name, thread_current()->exit_status);
   if (pd != NULL) 
     {
       /* Correct ordering here is crucial.  We must set
@@ -194,7 +195,7 @@ process_exit (void)
       file_allow_write(fl);
       thread_current()->executable = NULL;
       /*print exit info*/
-      printf ("%s: exit(%d)\n", thread_current()->name, thread_current()->exit_status);
+      
       sema_up(&thread_current()->waiting);
       cur->pagedir = NULL;
       pagedir_activate (NULL);

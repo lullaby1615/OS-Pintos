@@ -128,16 +128,18 @@ int wait (tid_t tid){
 }
 
 int write (int fd, const void *buffer, unsigned length){
-  if(fd==STDOUT){ // stdout
-      putbuf((char *) buffer,(size_t)length);
-      return (int)length;
-  }else{
+//文件描述符不是标准输出 写到文件中
+  if(fd!=STDOUT){
     struct file *f = find_file_by_fd(fd);
     if(f==NULL){
       exit(-1);
     }
     return (int) file_write(f,buffer,length);
-
+  }
+  //文件描述符为标准输出文件 写到标准输出
+  else{
+      putbuf((char *) buffer,(size_t)length);
+      return (int)length;
   }
 }
 
@@ -177,19 +179,20 @@ void close (int fd){
 }
 
 int read (int fd, void *buffer, unsigned length){
-  // printf("call read %d\n", fd);
-  if(fd==STDIN){
-    for(unsigned int i=0;i<length;i++){
-      *((char **)buffer)[i] = input_getc();
-    }
-    return length;
-  }else{
+  // fd不是标准输入文件
+  if(fd!=STDIN){
     struct file *f = find_file_by_fd(fd);
-
     if(f == NULL){
       return -1;
     }
     return file_read(f,buffer,length);
+  }
+  // fd 是标准输入文件
+  else{
+    for(unsigned int i=0;i<length;i++){
+      *((char **)buffer)[i] = input_getc();
+    }
+    return length;
   }
 }
 
@@ -198,7 +201,6 @@ tid_t exec (const char *file){
 }
 
 void seek (int fd, unsigned position){
-
   struct file *f = find_file_by_fd(fd);
   if(f == NULL){
     exit(-1);
