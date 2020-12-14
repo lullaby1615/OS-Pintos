@@ -94,7 +94,7 @@ struct thread
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
 
-//#ifdef USERPROG
+#ifdef USERPROG
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */
 
@@ -106,7 +106,7 @@ struct thread
 	struct thread* parent;				/* parent process */
 	struct semaphore waiting;			/* Process_wait. */
 struct semaphore load_waiting;
-//#endif
+#endif
 
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */

@@ -118,8 +118,6 @@ start_process (void *file_name_)
 
   palloc_free_page (file_name);
   
-
-  
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in
      threads/intr-stubs.S).  Because intr_exit takes all of its
@@ -129,7 +127,6 @@ start_process (void *file_name_)
   asm volatile ("movl %0, %%esp; jmp intr_exit" : : "g" (&if_) : "memory");
   NOT_REACHED ();
 }
-
 
 /*get exit_status by child's tid*/
 int get_exit_status(tid_t tid){
@@ -200,7 +197,6 @@ process_exit (void)
       cur->pagedir = NULL;
       pagedir_activate (NULL);
       pagedir_destroy (pd);
-      
     }
 }
 

@@ -15,10 +15,8 @@
 #define STDIN 0
 #define STDOUT 1
 
-
 #define SYS_CALL_NUM 20
 static void syscall_handler (struct intr_frame *f);
-
 
 void halt (void) NO_RETURN;
 void exit (int status) NO_RETURN;
@@ -118,9 +116,7 @@ int open (const char *file){
     list_push_back(&thread_current()->fd_list, &tmyfile->thread_elem);
     return tmyfile->fd;
   }
-
   return -1;
-
 }
 
 int wait (tid_t tid){
